@@ -45,7 +45,7 @@ int main(int argc, char **argv)
 
     double tic = omp_get_wtime();
 
-    #pragma omp parallel for num_threads(threads) schedule(static, CHUNK)
+    #pragma omp parallel for num_threads(threads) schedule(static)
     for (int i=0; i<size; i++) {
         int sum = 0;
         for (int j=0; j<size; j++) {
@@ -53,10 +53,14 @@ int main(int argc, char **argv)
                 sum += abs(A[i][j]);
             }
         }
-        /* if even one of the rows fails the test, it's not an sddm */
-        if (A[i][i] <= sum) {
-            /* AND all the booleans together, if one is false -> the result is false */
-            sddm = sddm && false;
+        /* 
+         * If even one of the rows fails the test, it's not an sddm.
+         * Also don't bother writing to it if some other thread already did,
+         * we would like to break early if it's already false but we can't break out of parallel fors :(
+         */
+        if (A[i][i] <= sum && !sddm) {
+            #pragma omp atomic write
+            sddm = false;
         }
     }
 
@@ -73,7 +77,7 @@ int main(int argc, char **argv)
 
     /* find max using reduction */
     int max = -INT_MAX;
-    #pragma omp parallel for num_threads(threads) schedule(static, CHUNK) reduction(max:max)
+    #pragma omp parallel for num_threads(threads) schedule(static) reduction(max:max)
     for (int i=0; i<size; i++) {
         max = A[i][i] > max ? A[i][i] : max;
     }
@@ -88,7 +92,7 @@ int main(int argc, char **argv)
     tic = omp_get_wtime();
 
     /* fill it as needed */
-    #pragma omp parallel for num_threads(threads) schedule(static, CHUNK)
+    #pragma omp parallel for num_threads(threads) schedule(static)
     for (int i=0; i<size; i++) {
         for (int j=0; j<size; j++) {
             if (i != j) {
@@ -109,7 +113,7 @@ int main(int argc, char **argv)
 
     /* find min using reduction */
     int min = INT_MAX;
-    #pragma omp parallel for num_threads(threads) schedule(static, CHUNK) reduction(min:min)
+    #pragma omp parallel for num_threads(threads) schedule(static) reduction(min:min)
     for (int i=0; i<size; i++) {
         for (int j=0; j<size; j++) {
             min = B[i][j] < min ? B[i][j] : min;
@@ -124,7 +128,7 @@ int main(int argc, char **argv)
 
     /* find min using critical section */
     int min2 = INT_MAX;
-    #pragma omp parallel for num_threads(threads) schedule(static, CHUNK)
+    #pragma omp parallel for num_threads(threads) schedule(static)
     for (int i=0; i<size; i++) {
         for (int j=0; j<size; j++) {
             #pragma omp critical

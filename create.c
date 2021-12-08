@@ -44,18 +44,15 @@ int main(int argc, char **argv)
     int max_value = 10;
     /* default size of matrix */
     int N = 4;
-    #pragma omp parallel
-    {
-        printf("ME\n");
-    }
 
     /* create a strictly diagonally dominant matrix? */
     bool sddm = true;
     /* also print size of matrix */
     bool print_size = true;
 
-    double tic;
-    double toc;
+    /* for benchmarking */
+    /* double tic; */
+    /* double toc; */
 
     /* parse args */
     char c;
@@ -104,7 +101,7 @@ int main(int argc, char **argv)
 
     matrix mat = matlloc(N);
 
-    tic = omp_get_wtime();
+    /* tic = omp_get_wtime(); */
 
     /* seed for rand_r */
     unsigned int seed = rand();
@@ -113,14 +110,15 @@ int main(int argc, char **argv)
     #pragma omp parallel for schedule(static) collapse(2)
     for (int i = 0; i < N; i++) {
         for (int j = 0; j < N; j++) {
+            /* the normal rand is NOT reentrant so performance tanks */
             int elem  = (rand_r(&seed) % (max_value * 2)) - max_value - 1;
             mat[i][j] = elem;
         }
     }
 
-    toc = omp_get_wtime();
+    /* toc = omp_get_wtime(); */
 
-    fprintf(stderr, "%f\n", toc - tic);
+    /* fprintf(stderr, "%f\n", toc - tic); */
 
     /* make it a sddm */
     if (sddm) {
