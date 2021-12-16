@@ -50,7 +50,7 @@ int main(int argc, char **argv)
          * Also don't bother writing to it if we already know it's not sddm
          * we would like to break early if here but we can't break out of a parallel for :(
          */
-        if (A[i][i] <= sum || !sddm) {
+        if (abs(A[i][i]) <= sum || !sddm) {
             #pragma omp atomic write
             sddm = false;
         }
@@ -89,7 +89,7 @@ int main(int argc, char **argv)
     for (int i = 0; i < size; i++) {
         for (int j = 0; j < size; j++) {
             if (i != j) {
-                B[i][j] = max - A[i][j];
+                B[i][j] = max - abs(A[i][j]);
             } else {
                 B[i][j] = max;
             }
