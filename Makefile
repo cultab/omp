@@ -6,7 +6,11 @@ make:
 	gcc $(FLAGS) mat.h -o mat.o
 
 test: make
+	@echo "Testing with sddm!"
+	@echo "------------------"
 	-@./create     --sddm 2> /dev/null | ./diag || ( tput setaf 1; echo     'TEST FAILED sddm!'; tput setaf 15 )
+	@echo "Testing with non-sddm!"
+	@echo "----------------------"
 	-@./create --not-sddm 2> /dev/null | ./diag && ( tput setaf 1; echo 'TEST FAILED non-sddm!'; tput setaf 15 )
 	# cat 16_000.mat | ./diag 1 >> results.txt
 	# cat 16_000.mat | ./diag 4 >> results.txt

@@ -7,7 +7,7 @@
 #include "mat.h"
 
 #define HELP_STRING                                                                                                    \
-    "make_mat [-h] [-d|-D] [-m] [-p|-P] N\n"                                                                           \
+    "create [-h] [-d|-D] [-m] [-p|-P] N\n"                                                                           \
     "\n"                                                                                                               \
     "Print an NxN matrix to stdout.\n"                                                                                 \
     "\n"                                                                                                               \
@@ -22,7 +22,7 @@
     "--not-sddm -D\n"                                                                                                  \
     "\tdon't create a strictly diagonally dominant matrix\n"                                                           \
     "--max-value -m\n"                                                                                                 \
-    "\tset the value range for elements (expept diagonal) [-max, max], defaults to 10\n"                               \
+    "\tset the value range for elements (expept diagonal) [-max, max], defaults to 100\n"                              \
     "--print-size -p\n"                                                                                                \
     "\tprint the size of the matrix, default behavior\n"                                                               \
     "--no-print-size -P\n"                                                                                             \
@@ -41,7 +41,7 @@ static struct option long_options[] = {
 int main(int argc, char **argv)
 {
     /* default max value for matrix elements */
-    int max_value = 10;
+    int max_value = 100;
     /* default size of matrix */
     int N = 4;
 
@@ -76,12 +76,16 @@ int main(int argc, char **argv)
             break;
         case 'h':
             fprintf(stderr, "%s", HELP_STRING);
-            exit(1);
+            exit(0);
         case ':':
             fprintf(stderr, "Option -%c requires an operand\n", optopt);
+            fprintf(stderr, "%s", HELP_STRING);
+            exit(1);
             break;
         case '?':
             fprintf(stderr, "Unrecognized option: '-%c'\n", optopt);
+            fprintf(stderr, "%s", HELP_STRING);
+            exit(1);
         }
     }
 
@@ -89,16 +93,18 @@ int main(int argc, char **argv)
     int begin_pos = optind;
     for (; optind < argc; optind++) {
         if (optind == begin_pos) {
-            N = atoi(argv[optind]);
+            N = strtol(argv[optind], NULL, 10);
         } else {
             fprintf(stderr, "Ignoring positional argument: '%s'\n", argv[optind]);
         }
     }
 
+    /* print the size of the matrix */
     if (print_size) {
         printf("%d\n", N);
     }
 
+    /* allocate memory for new matrix */
     matrix mat = matlloc(N);
 
     /* tic = omp_get_wtime(); */
@@ -110,7 +116,7 @@ int main(int argc, char **argv)
     #pragma omp parallel for schedule(static) collapse(2)
     for (int i = 0; i < N; i++) {
         for (int j = 0; j < N; j++) {
-            /* the normal rand is NOT reentrant so performance tanks */
+            /* the normal rand is NOT reentrant so performance tanks if it's used */
             int elem  = (rand_r(&seed) % (max_value * 2)) - max_value - 1;
             mat[i][j] = elem;
         }
@@ -120,7 +126,7 @@ int main(int argc, char **argv)
 
     /* fprintf(stderr, "%f\n", toc - tic); */
 
-    /* make it a sddm */
+    /* make it a sddm if needed */
     if (sddm) {
         for (int i = 0; i < N; i++) {
             int res = 0;
@@ -132,11 +138,25 @@ int main(int argc, char **argv)
             }
             mat[i][i] = res + 1;
         }
+    } else {
+        for (int i = 0; i < N; i++) {
+            int res = 0;
+            #pragma omp parallel for schedule(static) reduction(+ : res)
+            for (int j = 0; j < N; j++) {
+                if (i != j) {
+                    res += abs(mat[i][j]);
+                }
+            }
+            mat[i][i] = res - 1;
+        }
     }
 
     /* fprintf(stderr, "Matrix of %dx%d:\n", N, N); */
     /* print to stdout */
     print_mat(mat, N, max_value);
+
+    /* free */
+    matfree(mat, N);
 
     return 0;
 }
