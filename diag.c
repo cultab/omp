@@ -50,7 +50,7 @@ int main(int argc, char **argv)
          * Also don't bother writing to it if we already know it's not sddm
          * we would like to break early if here but we can't break out of a parallel for :(
          */
-        if (abs(A[i][i]) <= sum || !sddm) {
+        if (!sddm || abs(A[i][i]) <= sum) {
             #pragma omp atomic write
             sddm = false;
         }
@@ -58,7 +58,7 @@ int main(int argc, char **argv)
 
     double toc = omp_get_wtime();
 
-    printf("%f seconds to test if A is an sddm.\n", toc - tic);
+    printf("%e seconds to test if A is an sddm.\n", toc - tic);
 
     /* exit if it's not an sddm */
     if (!sddm) {
@@ -77,7 +77,7 @@ int main(int argc, char **argv)
 
     toc = omp_get_wtime();
 
-    printf("%f seconds to find A's diagonal's max=%d.\n", toc - tic, max);
+    printf("%e seconds to find A's diagonal's max=%d.\n", toc - tic, max);
 
     /* alloc a new matrix */
     matrix B = matlloc(size);
@@ -101,7 +101,7 @@ int main(int argc, char **argv)
     /* free matrix A */
     matfree(A, size);
 
-    printf("%f seconds to create matrix B.\n", toc - tic);
+    printf("%e seconds to create matrix B.\n", toc - tic);
 
     print_mat(B, size, max);
 
@@ -118,7 +118,7 @@ int main(int argc, char **argv)
 
     toc = omp_get_wtime();
 
-    printf("%f seconds to find B's min with reduction, min=%d.\n", toc - tic, min);
+    printf("%e seconds to find B's min with reduction, min=%d.\n", toc - tic, min);
 
     tic = omp_get_wtime();
 
@@ -136,7 +136,7 @@ int main(int argc, char **argv)
 
     toc = omp_get_wtime();
 
-    printf("%f seconds to find B's min with critcal section, min=%d.\n", toc - tic, min2);
+    printf("%e seconds to find B's min with critcal section, min=%d.\n", toc - tic, min2);
 
     int *min_arr = malloc(threads * sizeof(int));
 
@@ -146,19 +146,20 @@ int main(int argc, char **argv)
         int tid       = omp_get_thread_num();
         int rows      = size / threads; // how many rows this thread gets
         int rem       = size % threads; // the number of rows that were not assigned to a thread
+        int extra = 0;
         int local_min = INT_MAX;
         /* if there exist rows that were not assigned, assign them to the last thread */
         if (rem != 0 && tid == threads - 1) {
-            rows += rem;
+            extra = rem;
         }
         /* printf("Thread(%d) rows=%d\n", tid, rows); */
 
         /* find the local minimun for the rows given to each thread */
-        for (int i = tid; i < tid + rows; i++) {
+        for (int i = tid * rows; i < tid * rows + rows + extra; i++) {
             for (int j = 0; j < size; j++) {
                 if (B[i][j] < local_min) {
-                    /* printf("Thread(%d):new local min=%d\n", tid, local_min); */
                     local_min = B[i][j];
+                    /* printf("Thread(%d):new local min=%d\n", tid, local_min); */
                 }
             }
         }
@@ -182,15 +183,15 @@ int main(int argc, char **argv)
          *         For 8 threads:
          *
          *         ⎧ T(0)  T(1)  T(2)   T(3)  T(4)   T(5)  T(6)   T(7)
-         *         ⎪  \    /       \    /      \    /       \    /                                 .
-         *         ⎪   \  /         \  /        \  /         \  /                                  .
-         *         ⎪    \/           \/          \/           \/                                   .
-         *         ⎪   T(0)         T(2)         T(4)         T(6)     j = 1, i = 2, k = 0         .
-         *         ⎪      \        /                \        /                                     .
-         * k steps ⎨       \      /                  \      /                                      .
-         *         ⎪        \    /                    \    /                                       .
-         *         ⎪         \  /                      \  /                                        .
-         *         ⎪         T(0)                      T(4)            j = 2, i = 3, k = 1         .
+         *         ⎪  \    /       \    /      \    /       \    /
+         *         ⎪   \  /         \  /        \  /         \  /
+         *         ⎪    \/           \/          \/           \/
+         *         ⎪   T(0)         T(2)         T(4)         T(6)     j = 1, i = 2, k = 0
+         *         ⎪      \        /                \        /
+         * k steps ⎨       \      /                  \      /
+         *         ⎪        \    /                    \    /
+         *         ⎪         \  /                      \  /
+         *         ⎪         T(0)                      T(4)            j = 2, i = 3, k = 1
          *         ⎪            \                     /
          *         ⎩             \---->   T(0)  <----/                 j = 4, i = 8, k = 2
          *
@@ -207,9 +208,9 @@ int main(int argc, char **argv)
             /*     fprintf(stderr, "\n"); */
             /* } */
             if (tid % i == 0 && tid != threads - 1) {
-                int res = min_arr[tid] < min_arr[tid + j] ? min_arr[tid] : min_arr[tid + j];
+                /* int res = min_arr[tid] < min_arr[tid + j] ? min_arr[tid] : min_arr[tid + j]; */
                 /* fprintf(stderr, "Thread(%d): decided on %d between %d and %d\n", tid, res, min_arr[tid], min_arr[tid+j]); */
-                min_arr[tid] = res;
+                min_arr[tid] = min_arr[tid] < min_arr[tid + j] ? min_arr[tid] : min_arr[tid + j];
             }
             #pragma omp barrier
         }
@@ -219,7 +220,7 @@ int main(int argc, char **argv)
     toc = omp_get_wtime();
 
     /* print_mat(B, size, max); */
-    printf("%f seconds to find B's min with tree, min=%d.\n", toc - tic, min_arr[0]);
+    printf("%e seconds to find B's min with tree, min=%d.\n", toc - tic, min_arr[0]);
 
     /* free matrix B */
     matfree(B, size);

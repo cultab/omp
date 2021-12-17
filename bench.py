@@ -20,26 +20,25 @@ def main():
         {"t": 32, "N": 1024},
     ]
     repeat = 20
-    with open("threads.csv", "w") as f:
+    with open("threads_ryzen.csv", "w") as f:
         with redirect_stdout(f):
             bench(runs, repeat)
 
     # benchmark with different sizes
     runs = [
-        {"t": 4, "N": 4},
-        {"t": 4, "N": 8},
-        {"t": 4, "N": 16},
-        {"t": 4, "N": 32},
-        {"t": 4, "N": 64},
-        {"t": 4, "N": 128},
-        {"t": 4, "N": 256},
-        {"t": 4, "N": 512},
-        {"t": 4, "N": 1024},
+        {"t": 8, "N": 8},
+        {"t": 8, "N": 16},
+        {"t": 8, "N": 32},
+        {"t": 8, "N": 64},
+        {"t": 8, "N": 128},
+        {"t": 8, "N": 256},
+        {"t": 8, "N": 512},
+        {"t": 8, "N": 1024},
     ]
     repeat = 20
-    # with open("sizes.csv", "w") as f:
-    #     with redirect_stdout(f):
-    #         bench(runs, repeat)
+    with open("sizes_ryzen.csv", "w") as f:
+        with redirect_stdout(f):
+            bench(runs, repeat)
 
 
 def bench(runs: list[dict[str, int]], repeat):
@@ -61,7 +60,7 @@ def bench(runs: list[dict[str, int]], repeat):
 
         for _ in range(repeat):
             # if time := run.get("wait"):
-            # sleep(0.5)
+            # sleep(0.1)
 
             res = subprocess.run(cmd, shell=True, stdout=subprocess.PIPE)
             # result = subprocess.Popen(cmd, shell=True, stdin=None, stdout=subprocess.PIPE).stdout.decode('utf-8')
@@ -78,6 +77,8 @@ def bench(runs: list[dict[str, int]], repeat):
             b_min_reduce_time += float(lines[2 * run["N"] + 5].split()[0])
             b_min_critical_time += float(lines[2 * run["N"] + 6].split()[0])
             b_min_tree_time += float(lines[2 * run["N"] + 7].split()[0])
+            # print(lines[2 * run["N"] + 6].split()[0])
+            # print(lines[2 * run["N"] + 7].split()[0])
             bar.update()
 
         #     print(f'{sddm_time=:>19}')
