@@ -44,12 +44,12 @@ my_theme <- theme(
 )
 
 graph_threads <- ggplot(data = threads, aes(x = threads, y = value, color = variable)) +
-    geom_path() +
+    geom_line() +
     geom_point() +
     scale_x_continuous(trans = "log2", breaks = c(1, 2, 4, 6, 8, 12, 16, 32)) +
-    scale_y_continuous(labels = scientific) +
+    scale_y_continuous(trans = "log", labels = scientific) +
     scale_color_discrete(labels = color_labs, breaks = breaks_order) +
-    labs(y = "Time (s)", x = "# of Threads", color = "Operation") +
+    labs(y = "Time log(s)", x = "# of Threads", color = "Operation") +
     my_theme
 
 graph_threads_crit_tree <- ggplot(data = threads_crit_tree, aes(x = threads, y = value, color = variable)) +
@@ -82,9 +82,9 @@ graph_sizes <- ggplot(data = sizes, aes(x = size, y = value, color = variable)) 
     geom_path() +
     geom_point() +
     scale_x_continuous(trans = "log2", breaks = c(8, 16, 32, 64, 128, 256, 512, 1024)) +
-    scale_y_continuous(labels = scientific) +
+    scale_y_continuous(trans = "log", labels = scientific) +
     scale_color_discrete(labels = color_labs, breaks = breaks_order) +
-    labs(y = "Time (s)", x = "Size of Matrix", color = "Operation") +
+    labs(y = "Time log(s)", x = "Size of Matrix", color = "Operation") +
     my_theme
 
 graph_sizes_crit_tree <- ggplot(data = sizes_crit_tree, aes(x = size, y = value, color = variable)) +
