@@ -207,9 +207,9 @@ int main(int argc, char **argv)
             /*     } */
             /*     fprintf(stderr, "\n"); */
             /* } */
-            if (tid % i == 0 && tid != threads - 1) {
+            if (tid % i == 0 && tid + j <= threads - 1) {
                 /* int res = min_arr[tid] < min_arr[tid + j] ? min_arr[tid] : min_arr[tid + j]; */
-                /* fprintf(stderr, "Thread(%d): decided on %d between %d and %d\n", tid, res, min_arr[tid], min_arr[tid+j]); */
+                /* fprintf(stderr, "Thread(%d): decided on %d between %d and %d also j=%d\n", tid, res, min_arr[tid], min_arr[tid+j], j); */
                 min_arr[tid] = min_arr[tid] < min_arr[tid + j] ? min_arr[tid] : min_arr[tid + j];
             }
             #pragma omp barrier
