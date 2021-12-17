@@ -26,6 +26,6 @@ render:
 
 submit:
 	cp report.pdf 171014.pdf
-	zip Askisi_1_171014.zip 171014.pdf create.c diag.c mat.h bench.py
+	zip Askisi_1_171014.zip 171014.pdf create.c diag.c mat.h bench.py Makefile
 
 .PHONY: render
